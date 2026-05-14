@@ -7,6 +7,7 @@ import os
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -226,6 +227,29 @@ class LockConflictTests(unittest.TestCase):
             err = pol.ensure_lock_for_write("pipelines/ingest/foo/bar.py")
             self.assertIsNotNone(err)
             self.assertIn("locked", err.lower())
+
+
+class SparkPostAdvisoryTests(unittest.TestCase):
+    def test_post_tool_suggests_for_pipeline_antipattern(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            rel = "pipelines/demo/bad.py"
+            (root / rel).parent.mkdir(parents=True, exist_ok=True)
+            (root / rel).write_text("df = df.repartition(1)\n", encoding="utf-8")
+            saved = pol.REPO_ROOT
+            try:
+                pol.REPO_ROOT = root  # type: ignore[misc]
+                payload = {"tool_name": "Write", "tool_input": {"path": rel, "contents": ""}}
+                with unittest.mock.patch.object(pol, "read_stdin_json", return_value=payload):
+                    with unittest.mock.patch.object(pol, "exit_post_additional_context") as m_ctx:
+                        with unittest.mock.patch.object(pol, "exit_post_empty"):
+                            pol.main_spark_post_tool()
+                self.assertTrue(m_ctx.called)
+                hint = m_ctx.call_args[0][0]
+                self.assertIn("non-blocking", hint.lower())
+                self.assertIn("repartition", hint.lower())
+            finally:
+                pol.REPO_ROOT = saved  # type: ignore[misc]
 
 
 if __name__ == "__main__":

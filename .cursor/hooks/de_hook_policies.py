@@ -506,18 +506,37 @@ def main_sec_pre_tool() -> None:
 
 
 def main_spark_pre_tool() -> None:
+    """Legacy entrypoint: Spark checks are advisory-only (see `main_spark_post_tool`)."""
+    read_stdin_json()
+    exit_allow_pre_tool()
+
+
+def main_spark_post_tool() -> None:
+    """After Write/StrReplace: suggest PySpark / pipeline fixes without blocking."""
     data = read_stdin_json()
     path = get_write_path(data)
-    content = get_write_contents(data)
-    if not path or not content:
-        write_stdout_json({"permission": "allow"})
-        raise SystemExit(0)
+    if not path:
+        exit_post_empty()
     rel = str(Path(path).as_posix())
+    if not is_pipeline_path(rel):
+        exit_post_empty()
+
+    content = ""
+    disk = REPO_ROOT / rel
+    if disk.is_file():
+        try:
+            content = disk.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            content = ""
+    if not content.strip():
+        content = get_write_contents(data) or ""
+
     reasons = scan_spark_antipatterns(rel, content)
     if reasons:
-        exit_block_pre_tool("PySpark / DE quality gate failed.", "; ".join(reasons[:8]))
-    write_stdout_json({"permission": "allow"})
-    raise SystemExit(0)
+        exit_post_additional_context(
+            "PySpark / pipeline hints (non-blocking):\n- " + "\n- ".join(reasons[:12])
+        )
+    exit_post_empty()
 
 
 def main_orch_one_story() -> None:
