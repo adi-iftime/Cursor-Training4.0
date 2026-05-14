@@ -1,15 +1,13 @@
-# Orchestration artifacts (hooks)
+# Orchestration artifacts (optional)
 
-These files support **orchestration and Jira discipline** hooks:
+Optional files for **manual** multi-agent discipline. They are **not** read by the default [`.cursor/hooks.json`](../hooks.json) (only advisory `postToolUse` hooks are registered).
 
-- **`last_story.json`** — Written by the Technical Planning or Orchestrator flow before worker agents run. Validated on `subagentStop` by `de_jira_story_gate_subagent.py`. Required fields: `acceptance_criteria` (string), `worker_agent` (string), `dependencies` (list or string).
+- **`last_story.json`** — Optional checklist for workers: `acceptance_criteria` (string), `worker_agent` (string), `dependencies` (list or string). See [last_story.example.json](last_story.example.json).
 
-- **`locks.json`** — Auto-managed by `de_orch_path_lock.py` when editing paths under `pipelines/`. **Gitignored** locally to avoid committing machine-specific locks. Schema: [locks.schema.json](locks.schema.json).
+- **`locks.json`** — Optional path locks for pipeline areas. **Gitignored** locally if used. Schema: [locks.schema.json](locks.schema.json).
 
-## Task tool: planning vs implementation
+## Task tool: planning vs implementation (policy reference)
 
-The `de_orch_one_story_one_pr.py` hook reads [`../hooks/policies/orchestration_agents.json`](../hooks/policies/orchestration_agents.json). **Planning** subagent types may run `Task` without a Jira key or `OWNERSHIP=` in the prompt. **Implementation** types (and unknown/missing `subagent_type`) must include exactly one allowed Jira key and `OWNERSHIP=...` for overlap-safe execution.
+[`../hooks/policies/orchestration_agents.json`](../hooks/policies/orchestration_agents.json) documents recommended **planning** vs **implementation** `subagent_type` conventions for teams using the Task tool. Nothing in the current hook set enforces Jira keys or `OWNERSHIP=` at the editor.
 
-**Jira operations** (create/read/transition) must go through the **Atlassian MCP** when enabled; see [`.cursor/rules/jira-atlassian-mcp.mdc`](../rules/jira-atlassian-mcp.mdc).
-
-Copy [last_story.example.json](last_story.example.json) to `last_story.json` when bootstrapping.
+**Jira:** Use the **Atlassian MCP** per [`.cursor/rules/jira-atlassian-mcp.mdc`](../rules/jira-atlassian-mcp.mdc).
