@@ -1,0 +1,7 @@
+# Ignore local orchestration locks and PR body scratch files
+.cursor/de-orchestration/locks.json
+.cursor/tmp/
+
+# Python bytecode (hook modules)
+**/__pycache__/
+*.py[cod]
