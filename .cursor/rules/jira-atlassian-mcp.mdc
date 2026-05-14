@@ -19,11 +19,21 @@ Use Atlassian MCP tools (names may vary by plugin version) for:
 
 If MCP is **unavailable** (auth failure, disabled server): state that explicitly, stop claiming Jira was updated, and ask the human to fix MCP or perform the Jira change—do not pretend the operation succeeded.
 
+## Separation of concerns (three layers)
+
+| Layer | Agent | Jira / execution role |
+|--------|--------|------------------------|
+| **Planning** | **technical-planning-agent** | Creates **Epics** and **Stories** via MCP, dependency map, roadmap; **never** implements product code or opens PRs. **Stops** after Jira + handoff. |
+| **Orchestration** | **orchestrator-agent** | Reads backlog via MCP, sequences work, assigns **workers**, transitions **In Progress** / verifies **In Review**; does **not** replace the planner for initial Epic/story authoring. |
+| **Implementation** | **Worker agents** | Implement from assigned stories only; PRs + tests + docs; MCP for story read/update. |
+
 ## technical-planning-agent
 
-- Analyze the feature, architecture, and impacted components; decompose into **isolated** stories.
-- **Planning is not complete** until stories exist in Jira **created via MCP** (`createJiraIssue` / project create flows), not only as markdown in chat.
-- Every created story must be populated with (in description or custom fields as the project dictates): **Title**, **Objective**, **Scope**, **Technical requirements**, **Acceptance criteria**, **Testing requirements**, **Documentation requirements**, **Dependencies**, **Risks**, **Recommended agent type**, **Suggested PR boundary**, **Ownership scope**.
+- **Read-only** architecture analysis is permitted; **no** product source edits, **no** feature implementation, **no** PRs, **no** QA test implementation for the initiative—**Jira + roadmap only**.
+- For **medium/large** initiatives: create a detailed **Epic** via MCP (business + technical context, architecture, goals, risks, execution and orchestration strategy, testing and deployment considerations).
+- **Planning is not complete** until **Epic (if required)** and **every story** exist in Jira **via MCP**, with rich descriptions: **Business context (WHY)**, **Technical context (HOW)**, Objective, Scope, **Implementation guidance** (non-code), Acceptance criteria, Testing requirements, Documentation requirements, Dependencies, Risks, Recommended worker agent, Suggested PR boundary, Ownership scope.
+- Link stories to the Epic and each other via MCP (`createIssueLink`, etc.). **Do not** simulate Jira.
+- After Jira and handoff: **stop**—do not orchestrate or implement.
 
 ## orchestrator-agent
 
@@ -43,7 +53,11 @@ Applies to: **data-engineering-agent**, **backend-agent**, **frontend-agent**, *
 - One implementation PR **maps to exactly one** Jira story; include tests and required docs; structured PR body (summary, risks, impacted components).
 - When implementation is complete, tests and docs are done, and the PR exists: transition the story to **In Review** via MCP.
 
-Worker agents **must not**: combine multiple stories in one PR, edit unrelated components to “save time,” or bypass orchestration governance.
+Worker agents **must not**: combine multiple stories in one PR, edit unrelated components to “save time,” or bypass orchestration governance. They **must not** author initiative-level **Epics** or full **story backlogs** that replace **technical-planning-agent**—escalate gaps to the planner/orchestrator.
+
+## Specialist agents (QA, security, documentation, code-review)
+
+These agents **must not** replace **technical-planning-agent** for initiative-wide **Epic** or full **story backlog** design. They create **targeted** follow-on issues (bugs, findings, doc tasks) linked to existing Epic/story work.
 
 ## qa-agent
 
