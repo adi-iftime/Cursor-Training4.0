@@ -10,4 +10,6 @@ These files support **orchestration and Jira discipline** hooks:
 
 The `de_orch_one_story_one_pr.py` hook reads [`../hooks/policies/orchestration_agents.json`](../hooks/policies/orchestration_agents.json). **Planning** subagent types may run `Task` without a Jira key or `OWNERSHIP=` in the prompt. **Implementation** types (and unknown/missing `subagent_type`) must include exactly one allowed Jira key and `OWNERSHIP=...` for overlap-safe execution.
 
+**Jira operations** (create/read/transition) must go through the **Atlassian MCP** when enabled; see [`.cursor/rules/jira-atlassian-mcp.mdc`](../rules/jira-atlassian-mcp.mdc).
+
 Copy [last_story.example.json](last_story.example.json) to `last_story.json` when bootstrapping.
