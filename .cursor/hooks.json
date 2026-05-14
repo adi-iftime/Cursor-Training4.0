@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": ".cursor/hooks/de_sec_secrets_and_exfil.py",
+        "matcher": "^(Write|StrReplace|Shell|Task|MCP:)",
+        "timeout": 5,
+        "failClosed": true
+      },
+      {
+        "command": ".cursor/hooks/de_spark_quality_static.py",
+        "matcher": "^(Write|StrReplace)",
+        "timeout": 5,
+        "failClosed": true
+      },
+      {
+        "command": ".cursor/hooks/de_orch_one_story_one_pr.py",
+        "matcher": "^(Task|Shell)",
+        "timeout": 3,
+        "failClosed": true
+      },
+      {
+        "command": ".cursor/hooks/de_orch_path_lock.py",
+        "matcher": "^(Write|StrReplace|Shell)",
+        "timeout": 3,
+        "failClosed": true
+      },
+      {
+        "command": ".cursor/hooks/de_pr_quality_block.py",
+        "matcher": "^Shell",
+        "timeout": 10,
+        "failClosed": true
+      },
+      {
+        "command": ".cursor/hooks/de_dbx_deploy_safety_agent.py",
+        "matcher": "^Shell",
+        "timeout": 20,
+        "failClosed": true
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": ".cursor/hooks/de_jira_story_gate_mcp_post.py",
+        "matcher": "^MCP:",
+        "timeout": 20,
+        "failClosed": false
+      },
+      {
+        "command": ".cursor/hooks/de_pr_quality_inject.py",
+        "matcher": "^Shell",
+        "timeout": 5,
+        "failClosed": false
+      },
+      {
+        "command": ".cursor/hooks/de_pipeline_tests_coach.py",
+        "matcher": "^(Write|StrReplace)",
+        "timeout": 10,
+        "failClosed": false
+      }
+    ],
+    "subagentStop": [
+      {
+        "command": ".cursor/hooks/de_jira_story_gate_subagent.py",
+        "timeout": 30,
+        "failClosed": true
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/de_sec_shell_terminal.py",
+        "matcher": "(curl|wget|terraform|pulumi|aws |az |gcloud |databricks |dbx )",
+        "timeout": 2,
+        "failClosed": true
+      },
+      {
+        "command": ".cursor/hooks/de_dbx_deploy_safety_terminal.py",
+        "matcher": "(databricks|dbx|terraform|pulumi|aws |az |gcloud )",
+        "timeout": 20,
+        "failClosed": true
+      }
+    ]
+  }
+}
