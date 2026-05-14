@@ -130,6 +130,80 @@ class DeployPolicyTests(unittest.TestCase):
             del os.environ["DATABRICKS_BUNDLE_ENV"]
 
 
+class TaskOrchestrationModeTests(unittest.TestCase):
+    def test_planning_agent_allows_task_without_jira(self) -> None:
+        data = {
+            "tool_name": "Task",
+            "tool_input": {
+                "subagent_type": "technical-planning-agent",
+                "prompt": "Analyze requirements and produce an implementation plan.",
+            },
+        }
+        u, _a = pol.orchestration_task_violation(data)
+        self.assertIsNone(u)
+
+    def test_orchestrator_agent_allows_without_ownership(self) -> None:
+        data = {
+            "tool_name": "Task",
+            "tool_input": {
+                "subagent_type": "orchestrator-agent",
+                "prompt": "Coordinate workers; no Jira yet.",
+            },
+        }
+        self.assertIsNone(pol.orchestration_task_violation(data)[0])
+
+    def test_unknown_subagent_requires_jira_and_ownership(self) -> None:
+        data = {
+            "tool_name": "Task",
+            "tool_input": {
+                "subagent_type": "mystery-agent",
+                "prompt": "Do implementation work with no ticket.",
+            },
+        }
+        u, _ = pol.orchestration_task_violation(data)
+        self.assertIsNotNone(u)
+        self.assertIn("Jira", u)
+
+    def test_missing_subagent_type_requires_jira(self) -> None:
+        data = {
+            "tool_name": "Task",
+            "tool_input": {"prompt": "Implement feature with no subagent_type."},
+        }
+        u, _ = pol.orchestration_task_violation(data)
+        self.assertIsNotNone(u)
+
+    def test_implementation_requires_ownership(self) -> None:
+        data = {
+            "tool_name": "Task",
+            "tool_input": {
+                "subagent_type": "data-engineering-agent",
+                "prompt": "Implement DE-88 bronze layer.",
+            },
+        }
+        u, _ = pol.orchestration_task_violation(data)
+        self.assertIsNotNone(u)
+        self.assertIn("OWNERSHIP", u)
+
+    def test_implementation_allows_with_key_and_ownership(self) -> None:
+        data = {
+            "tool_name": "Task",
+            "tool_input": {
+                "subagent_type": "data-engineering-agent",
+                "prompt": "DE-88 OWNERSHIP=pipelines/ingest/ implement bronze.",
+            },
+        }
+        self.assertIsNone(pol.orchestration_task_violation(data)[0])
+
+    def test_subagent_type_from_prompt_hint(self) -> None:
+        data = {
+            "tool_name": "Task",
+            "tool_input": {
+                "prompt": "subagent_type: orchestrator-agent\nCoordinate only.",
+            },
+        }
+        self.assertIsNone(pol.orchestration_task_violation(data)[0])
+
+
 class LockConflictTests(unittest.TestCase):
     def test_conflicting_branch_denied(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

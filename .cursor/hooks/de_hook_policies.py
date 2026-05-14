@@ -93,6 +93,95 @@ def get_task_text(data: dict[str, Any]) -> str:
     return json.dumps(data, ensure_ascii=False)
 
 
+def normalize_subagent_slug(value: str) -> str:
+    s = value.strip().lower()
+    s = re.sub(r"\s+", "-", s)
+    s = s.replace("_", "-")
+    return s
+
+
+def get_task_subagent_type(data: dict[str, Any]) -> str | None:
+    """Resolve worker subagent type from Task payload (tool_input, top-level, or prompt hints)."""
+    ti = get_tool_input(data)
+    for key in (
+        "subagent_type",
+        "subagentType",
+        "agent_type",
+        "agentType",
+        "worker",
+        "worker_type",
+        "workerType",
+    ):
+        for container in (ti, data):
+            v = container.get(key)
+            if isinstance(v, str) and v.strip():
+                return normalize_subagent_slug(v)
+    prompt = get_task_text(data)
+    for pat in (
+        r"subagent_type\s*[:=]\s*[\"']?([A-Za-z0-9_.-]+)",
+        r"subagentType\s*[:=]\s*[\"']?([A-Za-z0-9_.-]+)",
+    ):
+        m = re.search(pat, prompt, re.I)
+        if m:
+            return normalize_subagent_slug(m.group(1))
+    return None
+
+
+def orchestration_agent_mode_sets() -> tuple[set[str], set[str]]:
+    raw = _load_json("orchestration_agents.json")
+    planning: set[str] = set()
+    impl: set[str] = set()
+    for x in raw.get("planning_subagent_types", []) if isinstance(raw.get("planning_subagent_types"), list) else []:
+        if isinstance(x, str) and x.strip():
+            planning.add(normalize_subagent_slug(x))
+    for x in raw.get("implementation_subagent_types", []) if isinstance(
+        raw.get("implementation_subagent_types"), list
+    ) else []:
+        if isinstance(x, str) and x.strip():
+            impl.add(normalize_subagent_slug(x))
+    return planning, impl
+
+
+def is_planning_task_subagent(subagent_type: str | None) -> bool:
+    if not subagent_type:
+        return False
+    planning, _impl = orchestration_agent_mode_sets()
+    return normalize_subagent_slug(subagent_type) in planning
+
+
+def task_implementation_gates_required(subagent_type: str | None) -> bool:
+    """Planning agents skip Jira + OWNERSHIP; implementation and unknown agents require both."""
+    if subagent_type and is_planning_task_subagent(subagent_type):
+        return False
+    return True
+
+
+def orchestration_task_violation(data: dict[str, Any]) -> tuple[str | None, str | None]:
+    """Return (user_message, agent_message) if Task orchestration should block; else (None, None)."""
+    if get_tool_name(data) != "Task":
+        return None, None
+    sub = get_task_subagent_type(data)
+    if not task_implementation_gates_required(sub):
+        return None, None
+    prompt = get_task_text(data)
+    keys = list(dict.fromkeys(filter_keys(jira_keys(prompt))))
+    if len(keys) != 1:
+        return (
+            "Orchestration (implementation Task): include exactly one Jira story key "
+            f"(allowed projects: {', '.join(sorted(allowed_jira_projects()))}). "
+            "Planning agents (technical-planning-agent, orchestrator-agent, qa-agent, security-agent, "
+            "documentation-agent) may omit keys; set subagent_type on Task for planning mode.",
+            f"Found keys: {keys}; subagent_type={sub!r}",
+        )
+    if "OWNERSHIP=" not in prompt.upper():
+        return (
+            "Orchestration (implementation Task): include OWNERSHIP=path/prefix/ in the Task prompt "
+            "(isolated code ownership). Planning/orchestration agents may omit OWNERSHIP.",
+            None,
+        )
+    return None, None
+
+
 def get_post_tool_output_text(data: dict[str, Any]) -> str:
     for key in ("tool_output", "output", "result", "content"):
         val = data.get(key)
@@ -434,20 +523,9 @@ def main_spark_pre_tool() -> None:
 def main_orch_one_story() -> None:
     data = read_stdin_json()
     tool = get_tool_name(data)
-    if tool == "Task":
-        prompt = get_task_text(data)
-        keys = filter_keys(jira_keys(prompt))
-        if len(keys) != 1:
-            exit_block_pre_tool(
-                "Orchestration: Task must include exactly one Jira key "
-                f"(allowed projects: {', '.join(sorted(allowed_jira_projects()))}).",
-                f"Found keys: {keys}",
-            )
-        if "OWNERSHIP=" not in prompt.upper():
-            exit_block_pre_tool(
-                "Orchestration: include OWNERSHIP=pipelines/... in the Task prompt.",
-                None,
-            )
+    user_msg, agent_msg = orchestration_task_violation(data)
+    if user_msg:
+        exit_block_pre_tool(user_msg, agent_msg)
     if tool == "Shell":
         cmd = get_shell_command(data)
         if re.search(r"gh\s+pr\s+(create|edit|ready|merge)\b", cmd) or re.search(
