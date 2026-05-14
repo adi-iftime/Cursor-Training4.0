@@ -454,6 +454,7 @@ def main_orch_one_story() -> None:
             r"git\s+checkout\s+-b\b", cmd
         ) or re.search(r"\bgit\s+push\b", cmd):
             keys = filter_keys(jira_keys(cmd + " " + current_git_branch()))
+            keys = list(dict.fromkeys(keys))
             branch = current_git_branch()
             if branch and branch not in ("main", "master"):
                 if not re.match(r"^(feature/)?[A-Z][A-Z0-9]+-\d+(/|-|$)", branch):
