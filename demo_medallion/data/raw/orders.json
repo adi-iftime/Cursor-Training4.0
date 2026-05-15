@@ -1,0 +1,38 @@
+[
+  {
+    "order_id": "ord-1001",
+    "customer_id": "cust-aa",
+    "order_ts": "2026-05-01T10:00:00Z",
+    "line_total": 129.99,
+    "currency": "USD",
+    "status": "completed",
+    "notes": "standard shipment"
+  },
+  {
+    "order_id": "ord-1002",
+    "customer_id": "cust-bb",
+    "order_ts": "2026-05-02T14:30:00+00:00",
+    "line_total": 0.01,
+    "currency": "EUR",
+    "status": "pending",
+    "notes": null
+  },
+  {
+    "order_id": "ord-1003",
+    "customer_id": "cust-aa",
+    "order_ts": "2026-05-03T09:15:00Z",
+    "line_total": -5.0,
+    "currency": "USD",
+    "status": "refunded",
+    "notes": "edge: non-positive amount retained as raw signal"
+  },
+  {
+    "order_id": "ord-1004",
+    "customer_id": "cust-cc",
+    "order_ts": "2026-05-04T22:00:00Z",
+    "line_total": 999999.999,
+    "currency": "GBP",
+    "status": "cancelled",
+    "notes": "high precision decimal"
+  }
+]

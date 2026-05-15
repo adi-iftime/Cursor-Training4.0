@@ -22,6 +22,9 @@ dev = [
 [tool.setuptools]
 packages = ["demo_medallion"]
 
+[tool.setuptools.package-data]
+demo_medallion = ["data/raw/*.json"]
+
 [tool.ruff]
 target-version = "py311"
 src = ["demo_medallion"]
