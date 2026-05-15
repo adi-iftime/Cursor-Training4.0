@@ -14,6 +14,10 @@ Run hook policy unit tests locally:
 python3 -m unittest discover -s tests -p "test_*.py" -v
 ```
 
+## Contributing
+
+Pull request expectations (Jira key, single-story scope, tests, `OWNERSHIP=` for Task-driven work) are summarized in [CONTRIBUTING.md](CONTRIBUTING.md). GitHub applies [.github/pull_request_template.md](.github/pull_request_template.md) when you open a new PR.
+
 ## demo_medallion (data engineering demo)
 
 See [demo_medallion/README.md](demo_medallion/README.md) for package setup, `ruff` / `pytest`, and CI.
