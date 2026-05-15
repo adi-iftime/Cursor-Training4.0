@@ -2,6 +2,12 @@
 .cursor/de-orchestration/locks.json
 .cursor/tmp/
 
+# demo_medallion pipeline outputs (SCRUM-65)
+out/
+
 # Python bytecode (hook modules)
 **/__pycache__/
 *.py[cod]
+
+# Editable install metadata (local `pip install -e`)
+*.egg-info/

@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "demo_medallion"
+version = "0.1.0"
+description = "Medallion orders pipeline demo package (SCRUM-64 / SCRUM-65)."
+readme = "demo_medallion/README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.0.0",
+    "pyarrow>=14.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "ruff>=0.4.0",
+]
+
+[tool.setuptools]
+packages = ["demo_medallion"]
+
+[tool.ruff]
+target-version = "py311"
+src = ["demo_medallion"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["demo_medallion/tests"]
+python_files = ["test_*.py"]
