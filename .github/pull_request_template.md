@@ -1,5 +1,5 @@
 <!--
-SCRUM-75 governance: keep PRs traceable, single-scoped, and aligned with repo rules.
+Keep PRs traceable, single-scoped, and aligned with .cursor/rules.
 Fill every section; remove this comment block before opening the PR if you prefer a cleaner description.
 -->
 
